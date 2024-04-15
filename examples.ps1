@@ -1,7 +1,8 @@
-
 $SecretServer = "secretserver.corp.local"
 $Credential = Get-Credential -Message "Secret Server credentials"
-$accountName = "InfraDev"
+$folder1Name = "InfraDev"
+$folder2Name = "AD"
+$secretName = "LDAP Account"
 
 #Note: token expires after 2 hours
 try
@@ -21,21 +22,21 @@ $headers.Add("Content-Type", 'application/json')
 
 $ssAPIPath = "https://$($SecretServer)/SecretServer/api/v1"
 
-#Get AWS Folder
+#Get Folder 1
 #& = %26
-$uri = "$($ssAPIPath)/folders?filter.searchText=AWS"
+$uri = "$($ssAPIPath)/folders?filter.searchText=$($folder1Name)"
 #$EscapedURI = [uri]::EscapeUriString($URI)
 $ongResponse = Invoke-WebRequest -Uri $uri -Method GET -Headers $headers | Select -ExpandProperty Content | ConvertFrom-Json
 #$rootFolderId = $ongResponse.records[0].parentFolderId
-$awsFolderId = $ongResponse.records[0].Id
+$folder1Id = $ongResponse.records[0].Id
 
-#Get account folder
-$uri = "$($ssAPIPath)/folders/lookup?filter.parentFolderId=$($awsFolderId)&filter.searchText=$($accountName)"
+#Get sub folder
+$uri = "$($ssAPIPath)/folders/lookup?filter.parentFolderId=$($folder1Id)&filter.searchText=$($folder2Name)"
 $folderResponse = Invoke-WebRequest -Uri $uri -Method GET -Headers $headers | Select -ExpandProperty Content | ConvertFrom-Json
 $folderName = $folderResponse.records | Select -ExpandProperty value
 $folderId = $folderResponse.records | Select -ExpandProperty id
 
-#get vRA key pair
+#get the secret in the folder
 Write-Verbose "[INFO] $(Get-Date) Get secret id"
 $uri = "$($ssAPIPath)/secrets/lookup?filter.searchText=$($secretName)&filter.folderId=$($folderId)"
 $foundSecrets = Invoke-WebRequest -uri $uri -Method GET -Headers $headers | Select -ExpandProperty Content | ConvertFrom-Json | Select -ExpandProperty records
@@ -58,7 +59,5 @@ try
     Return
 }
 
-$accessKey = $secret.items | ? { $_.fieldName -eq "Access Key" } | Select -ExpandProperty itemValue
-$secretKey = $secret.items | ? { $_.fieldName -eq "Secret Key" } | Select -ExpandProperty itemValue
-
-Write-Verbose "[INFO] $(Get-Date) Access Key: $($accessKey)"
+#display the details of the secret
+$secret.items | Select-Object fieldName, itemValue
