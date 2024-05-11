@@ -22,6 +22,11 @@ $headers.Add("Content-Type", 'application/json')
 
 $ssAPIPath = "https://$($SecretServer)/SecretServer/api/v1"
 
+#Get version information
+$uri = "$($ssAPIPath)/Version"
+$versionResponse = Invoke-WebRequest -Uri $uri -Method GET -Headers $headers | Select -ExpandProperty Content | ConvertFrom-Json
+Write-Output "[INFO] $(Get-Date) Secret Server Version: $($versionResponse.model.version)"
+
 #Get Folder 1
 #& = %26
 $uri = "$($ssAPIPath)/folders?filter.searchText=$($folder1Name)"
